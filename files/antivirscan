@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+
+import pyudev
+import psutil
+import time
+import sys
+import psutil
+import datetime
+import subprocess
+import os
+from pprint import pprint
+
+
+######################
+# invite
+######################
+def invite():
+	os.system('setterm -foreground black -background white')
+	os.system('clear')
+	print("************************************************".center(os.get_terminal_size().columns) )
+	print(" Insérez une clé USB pour commencer...".center(os.get_terminal_size().columns))
+	print("************************************************".center(os.get_terminal_size().columns))
+	return
+
+######################
+# idev
+######################
+def isdev():
+	context = pyudev.Context()
+	devices = [device for device in context.list_devices(subsystem='block', ID_BUS='usb')]
+
+	nb_device = 0
+
+	for device in devices:
+		if device.get('DEVTYPE')=="disk":
+			nb_device += 1
+	
+	return nb_device
+
+
+######################
+# ejectdev
+######################
+def ejectdev():
+	print("************************************************".center(os.get_terminal_size().columns))
+	print(" Veuillez retirer la clé...".center(os.get_terminal_size().columns))
+	print("************************************************".center(os.get_terminal_size().columns))
+
+	while isdev() > 0:
+		time.sleep(2)
+
+	return
+
+#####################
+# listparts
+#####################
+def listparts():
+    directories = [x[1] for x in os.walk("/media")]
+    non_empty_dirs = [x for x in directories if x] # filter out empty lists
+    return [item for subitem in non_empty_dirs for item in subitem] # flatten the list	
+			
+####################
+# scan
+####################
+def scan(path):
+	os.system('clear')
+	print("************************************************".center(os.get_terminal_size().columns))
+	print(" Début de l'analyse,".center(os.get_terminal_size().columns))
+	print(" avec les antivirus Clamav et SOPHOS".center(os.get_terminal_size().columns))
+	print("************************************************".center(os.get_terminal_size().columns))
+	print("Veuillez patienter...")
+	
+	now = datetime.datetime.now()
+	dt = now.strftime("%Y%m%d-%H%M%S")
+	fileout=open("/var/log/antivirscan/scan-"+dt+".log","w+")
+	
+	fileout.write("Analyse de "+path+"\n")
+	fileout.write("************************************************\n".center(os.get_terminal_size().columns))
+
+	output=""
+
+	cmd='/usr/bin/clamscan -r --move=/var/lib/antivirscan/quarantine --bell '+path + ' && savscan -di -ns -f -move=/var/lib/antivirscan/quarantine ' +path
+	p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+	for line in iter(p.stdout.readline, b''):
+		d_line=line.decode('utf-8')
+		sys.stdout.write(d_line)
+		fileout.write(d_line)
+		output += d_line
+	p.stdout.close()
+	fileout.close()
+	result=p.wait()
+	
+	print("************************************************".center(os.get_terminal_size().columns))
+	print(" Analyse terminée !".center(os.get_terminal_size().columns))
+	print(" Log disponible dans /var/log/antivirscan/scan-"+dt+".log")
+	print("************************************************".center(os.get_terminal_size().columns))
+	
+	if "LibClamAV Error" in output:
+		result=2
+
+	if result == 1:
+		with open('/usr/lib/antivirscan/virus.txt', 'r') as fin:
+			print(fin.read(), end="")
+		print(" CETTE CLE EST INFECTEE !!!")
+		print(" ")
+		print(" Merci d'insérer de nouveau la clé ")
+		print(" pour valider la désinfection ")
+	elif result == 0:
+		with open('/usr/lib/antivirscan/ok.txt', 'r') as fin:
+			print(fin.read(), end="")
+		print(" Aucune infection détectée. ")
+		print(" Cette clé est saine. ")
+	else:
+		with open('/usr/lib/antivirscan/error.txt', 'r') as fin:
+			print(fin.read(), end="")
+		print(" Une erreur est intervenue pendant l'analyse.".center(os.get_terminal_size().columns))
+		print(" Merci d'insérer de nouveau la clé ".center(os.get_terminal_size().columns))
+
+	print("************************************************".center(os.get_terminal_size().columns))
+	
+	return
+
+####################
+# MAIN
+####################
+
+try:
+	os.get_terminal_size()
+	invite()
+
+	while True:
+		time.sleep(1)
+
+		nb_device = isdev()
+		#print(nb_device)
+
+		if nb_device > 0:
+			if nb_device == 1:
+				os.system('clear')
+				print("************************************************".center(os.get_terminal_size().columns))
+				print(" Clé USB détectée ".center(os.get_terminal_size().columns))
+				print("************************************************".center(os.get_terminal_size().columns))
+				print("Les dossiers de la clef USB sont en train d'être ouverts...")
+				#attente montage partitions
+				time.sleep(5)
+				scan("/media")
+			elif nb_device > 1:
+				os.system('clear')
+				print("************************************************".center(os.get_terminal_size().columns))
+				print(" Plusieurs clés USB ont été détectées. ".center(os.get_terminal_size().columns))
+				print(" Merci de n'en brancher qu'une seule à la fois.".center(os.get_terminal_size().columns))
+				print("************************************************".center(os.get_terminal_size().columns))
+			ejectdev()
+			invite()
+except KeyboardInterrupt:
+	# quit
+	sys.exit()
+
+

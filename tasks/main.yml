@@ -1,0 +1,114 @@
+---
+- name: install clamav needed packages
+  apt: name={{item}} state=latest
+  with_items:
+    - clamav
+    - clamav-daemon
+    - build-essential
+    - python3-pyudev
+    - python3-psutil
+    - ntfs-3g
+
+
+- name: build clamav dependencies
+  apt: name={{item}} state=build-dep
+  with_items:
+    - clamav
+
+- name: Add the user antivir
+  ansible.builtin.user:
+    name: antivir
+    shell: /bin/bash
+    groups: antivir
+    append: yes
+
+- name: Copy python script antivirscan
+  ansible.builtin.copy:
+    src: files/antivirscan
+    dest: /usr/bin/antivirscan
+    group: antivir
+    mode: a+x
+
+- name: log folder for antivir
+  file:
+    path: "/var/log/antivirscan/"
+    owner: root
+    group: antivir
+    mode: 0644
+    state: "directory"
+- name: quarantine folder for antivir
+  file:
+    path: "/var/lib/antivirscan/quarantine"
+    owner: antivir
+    group: antivir
+    mode: 0644
+    state: "directory"
+
+- name: quarantine folder for antivir
+  file:
+    path: "/usr/lib/antivirscan"
+    mode: 0644
+    state: "directory"
+
+- name: Create directory for autologin service.
+  file:
+    path: "/etc/systemd/system/getty@tty1.service.d"
+    state: "directory"
+
+- name: Copy error.txt file
+  ansible.builtin.copy:
+    src: files/error.txt
+    dest: /usr/lib/antivirscan/error.txt
+    group: antivir
+
+- name: Copy ok.txt file
+  ansible.builtin.copy:
+    src: files/ok.txt
+    dest: /usr/lib/antivirscan/ok.txt
+    group: antivir
+
+- name: Copy virus.txt file
+  ansible.builtin.copy:
+    src: files/virus.txt
+    dest: /usr/lib/antivirscan/virus.txt
+    group: antivir
+
+- name: Make sure a service unit is running
+  ansible.builtin.systemd:
+    enabled: yes
+    name: getty@tty1.service
+
+- name: Override getty to append the autologin feature.
+  template:
+    src: "autologin.j2"
+    dest: "/etc/systemd/system/getty@tty1.service.d/override.conf"
+    owner: "root"
+    group: "root"
+    mode: 0644
+
+- name: logind.conf
+  lineinfile: 
+    dest: /etc/systemd/logind.conf
+    regexp: '^#?NAutoVTs=6' 
+    line: 'NAutoVTs=1'
+  notify:
+  - Reboot
+
+- name: copy-usbmount deb
+  ansible.builtin.copy:
+    src: usbmount_0.0.24_all.deb
+    dest: /root/usbmount_0.0.24_all.deb
+    mode: a+x
+- name: Install a .deb package
+  apt:
+    deb: /root/usbmount_0.0.24_all.deb
+
+- name: usbmount.conf
+  lineinfile: 
+    dest: /etc/systemd/logind.conf
+    regexp: '^#?FILESYSTEMS=' 
+    line: FILESYSTEMS="vfat ext2 ext3 ext4 hfsplus ntfs-3g"
+  notify:
+  - Reboot
+
+

@@ -1,0 +1,1 @@
+# virus-scan-kiosk-ansible

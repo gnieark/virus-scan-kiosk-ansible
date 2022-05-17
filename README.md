@@ -14,7 +14,9 @@ The kiosk boot on a this sreen
 
 When you plug an USB key, its content is automatically scanned by Clamav.
 
-(Others antivirus can be added, see bellow)
+(Others antivirus can be added, see sample on comment on files/antivirscan )
+
+/!\ The scan cleans. infected files are removed from usb key and quarantined on the kiosk. You can change this behavior by modifying the clamav call on files/antivirscan.
 
 ## Install
 

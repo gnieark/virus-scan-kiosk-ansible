@@ -1,10 +1,10 @@
 # virus-scan-kiosk-ansible
 
-An ANSIBLE role to create a simple kiosk-scan station.
+An ANSIBLE role to create a simple self service kiosk-scan station.
 
 ## Usage
 
-The kiosk boot on a sreen tha looks like this:
+The kiosk boot on a this sreen 
 
 ![main screen](doc/mainscreen.png)
 

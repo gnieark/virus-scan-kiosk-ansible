@@ -78,8 +78,9 @@ def scan(path):
 	fileout.write("************************************************\n".center(os.get_terminal_size().columns))
 
 	output=""
-
-	cmd='/usr/bin/clamscan -r --move=/var/lib/antivirscan/quarantine --bell '+path + ' && savscan -di -ns -f -move=/var/lib/antivirscan/quarantine ' +path
+	cmd='/usr/bin/clamscan -r --move=/var/lib/antivirscan/quarantine --bell '+path
+	#If you add Sophos, you can replace the previous line by this one:
+	#cmd='/usr/bin/clamscan -r --move=/var/lib/antivirscan/quarantine --bell '+path + ' && savscan -di -ns -f -move=/var/lib/antivirscan/quarantine ' +path
 	p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
 	for line in iter(p.stdout.readline, b''):
 		d_line=line.decode('utf-8')
